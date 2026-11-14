@@ -1,0 +1,37 @@
+cff-version: 1.2.0
+message: "If you use these labels or this code, please cite it as below, and also cite the RCAEval benchmark."
+title: "RE2 Propagation Paths: reference failure propagation paths for the RCAEval RE2 benchmark"
+type: dataset
+authors:
+  - family-names: Muthusamy
+    given-names: Poorani
+    # orcid: "https://orcid.org/0000-0000-0000-0000"   # add your ORCID iD here
+version: "1.0.0"
+date-released: "2026-11-15"
+license: CC-BY-4.0
+repository-code: "https://github.com/poorani/re2-propagation-paths"
+keywords:
+  - root cause analysis
+  - microservices
+  - distributed tracing
+  - failure propagation
+  - benchmark
+  - AIOps
+references:
+  - type: article
+    title: "RCAEval: A Benchmark for Root Cause Analysis of Microservice Systems with Telemetry Data"
+    authors:
+      - family-names: Pham
+        given-names: Luan
+      - family-names: Zhang
+        given-names: Hongyu
+      - family-names: Ha
+        given-names: Huong
+      - family-names: Salim
+        given-names: Flora
+      - family-names: Zhang
+        given-names: Xiuzhen
+    year: 2024
+    identifiers:
+      - type: other
+        value: "arXiv:2412.17015"
