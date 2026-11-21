@@ -6,9 +6,9 @@ authors:
   - family-names: Muthusamy
     given-names: Poorani
     orcid: "https://orcid.org/0009-0006-4038-5939"
-version: "1.0.0"
+version: "1.0.2"
 doi: 10.5281/zenodo.24211480
-date-released: "2026-11-13"
+date-released: "2026-11-21"
 license: CC-BY-4.0
 repository-code: "https://github.com/poorani/re2-propagation-paths"
 keywords:

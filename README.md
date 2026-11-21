@@ -21,6 +21,7 @@ check that explanation, not just the final answer.
 | `code/reference_path.py` | The labeling method (version v10) |
 | `code/full_run.py` | Runs the method on every RE2 case with traces (Kaggle-friendly, resumable) |
 | `code/sensitivity_run.py` | Re-runs every case under six threshold settings |
+| `code/placebo_run.py` | Placebo control: runs the method at fake fault times in normal periods |
 | `tests/test_reference_path.py` | Synthetic test cases for each design decision |
 | `results/` | Sensitivity analysis output |
 
@@ -33,8 +34,8 @@ check that explanation, not just the final answer.
 | **Total** | **91 (51%)** | **17 (9%)** | **72 (40%)** | **180** |
 
 - Mean path depth (services on the longest path): 2.15 in Online Boutique (max 3), 3.14 in Train Ticket (max 5).
-- About half of the RE2 cases have a failure spread that can be recovered from traces. Path-level
-  evaluation of RCA methods only applies to that subset.
+- About half of the RE2 cases (51%, 95% CI 43–58%) have a failure spread that this method detects
+  in the traces. Path-level evaluation only applies to that subset.
 
 ## Label format
 
@@ -64,14 +65,14 @@ Each line of `re2_propagation_labels.jsonl` is one case:
 | `label` | `path`: the failure spread from the root cause to at least one caller. `entry only`: the root cause is itself where outside requests arrive, so root and symptom are the same service. `no path`: no spread is visible in the traces. |
 | `paths` | Each path starts at the root cause and walks **upstream** to the services that call it, ending where possible at an entry point (where users see the symptom). |
 | `graph` | The union of all paths as directed edges `[caller, callee]`, the reference propagation graph. |
-| `confidence` | The strictest setting at which the label survives: `high` (2.0x minimum slowdown), `medium` (1.5x), `low` (1.1x only), `none` for no-path cases. |
-| `low_coverage` | `true` if the case has fewer than 90% of its system's usual call edges (15 Train Ticket cases), meaning the traces are incomplete. |
+| `confidence` | The strictest setting at which the label survives: `high` (2.0x minimum slowdown), `medium` (1.5x), `low` (baseline setting only), `none` for no-path cases. |
+| `low_coverage` | `true` if the case has fewer than 90% of the median number of call edges for its system (55 in Train Ticket, 14 in Online Boutique). 15 Train Ticket cases; their traces are incomplete. |
 | `n_call_edges`, `n_abnormal_edges` | Size of the call graph found in the traces, and how many of its edges changed after the fault. |
 
 ## How the labels are built
 
-The method is a simplified, trace-only version of the PAVE protocol from
-[OpenRCA 2.0](https://arxiv.org/abs/2606.27154). Because the injected fault and its time are known,
+The method follows the same forward, cause-to-effect idea as the PAVE protocol from
+[OpenRCA 2.0](https://arxiv.org/abs/2606.27154), using traces only. Because the injected fault and its time are known,
 it checks forward, from cause to effect:
 
 1. **Call graph.** Caller-to-callee edges are built from parent and child spans, plus the callee
@@ -81,6 +82,8 @@ it checks forward, from cause to effect:
    amount: at least 1.1x slower, or at least 1.5x faster (fail-fast, such as an out-of-memory service
    rejecting calls quickly), **and** by more than it drifts on its own during normal time
    (second half of the normal period vs the first half, in the same direction, with a 1.2x margin).
+   Because drift is never counted as less than 1, the drift check also means a slowdown must be
+   at least **1.2x** in practice, so the effective minimum slowdown at the baseline setting is 1.2x.
    An edge is also abnormal if its error rate rises by 5 points or more.
 3. **Onset.** For each abnormal edge, the first 5-second window after the fault in which it passes
    halfway between its normal and after-fault level.
@@ -88,7 +91,8 @@ it checks forward, from cause to effect:
    multi-span trace with no traced caller. For Online Boutique, only `frontendservice` (its one
    externally reachable service), because its traces are split per service.
 5. **Paths.** Starting at the root cause, walk upstream along abnormal edges, keeping a hop only if
-   it started no earlier than the hop before it. Paths ending at an entry point are preferred. If
+   it started no earlier than the hop before it. If any path reaches an entry point, only those paths
+   are kept. If
    outside requests to the root cause itself got slower, the case is `entry only`.
 
 ## Sensitivity
@@ -98,14 +102,43 @@ All 180 cases were re-run with minimum slowdowns of 1.1x, 1.5x and 2.0x and p-va
 
 | Setting | Path | Entry only | No path | Same label as baseline |
 |---|---|---|---|---|
-| 1.1x (baseline) | 91 | 17 | 72 | 100% |
+| 1.1x (baseline; effective 1.2x) | 91 | 17 | 72 | 100% |
 | 1.5x | 70 | 15 | 95 | 87% |
 | 2.0x | 65 | 15 | 100 | 84% |
 
-- The p-value cutoff makes no difference to any label.
-- Stricter slowdown thresholds only ever remove paths; they never add or change them.
-- 152 of 180 cases (84%) have the same label under all six settings.
-- 65 path cases survive even at 2.0x (`confidence: high`), a high-confidence core.
+- Only the minimum slowdown and the p-value cutoff change between settings. The speed-up (0.67x),
+  drift (1.2x) and error (5 points) rules stay the same, so `confidence` measures how a label holds
+  up when the slowdown bar is raised.
+- The p-value cutoff changes no label, although it removes some edges in 4 cases.
+- Stricter slowdown settings only turn path or entry-only cases into no-path cases, never the reverse.
+- 152 of 180 cases (84%) have the same label under all six settings. This includes the 72 no-path
+  cases, which cannot change (a stricter setting only removes edges). Without them, 80 of the 108
+  path and entry-only cases (74%) keep their label. The 28 that change are the 26 medium- and
+  low-confidence path cases and the 2 low-confidence entry-only cases.
+- The p-value cutoff had no effect on labels and 1.1x is the baseline (effective 1.2x), so in
+  practice there are two stricter settings: 1.5x and 2.0x.
+- 65 path cases still have a path at 2.0x (`confidence: high`); 49 of them keep exactly the same graph.
+- Stability is about the label, not the exact paths. In three Train Ticket cases
+  (`re2tt_ts-route-service_cpu_1`, `re2tt_ts-route-service_socket_3`, `re2tt_ts-train-service_cpu_2`),
+  a stricter setting keeps an edge that is not in the baseline label: at baseline, paths that reach an
+  entry point are kept and the others dropped; when those paths drop out, a shorter path is kept instead.
+
+## Placebo control
+
+To estimate how often the method finds spread when nothing is broken, `code/placebo_run.py` runs it
+on the normal period of each case only (the 12 minutes before the real fault), with a fake fault
+time halfway and two-thirds of the way through. Any label other than `no path` is then false
+(`results/re2_placebo.csv`).
+
+| System | Runs | False `path` | False `entry only` | Abnormal edges per run (mean, max) |
+|---|---|---|---|---|
+| Online Boutique | 180 | 0 | 0 | 0.00, 0 |
+| Train Ticket | 180 | 2 | 5 | 0.61, 6 |
+| **Total** | **360** | **2** | **5** | |
+
+- 7 of 360 runs (1.9%, 95% CI 0.9–4.0%) get a false label. For comparison, real faults give a path in 51% of cases.
+- Most false edges in Train Ticket are speed-ups (0.37 of the 0.61 per run), so the fail-fast rule is the main source of false edges.
+- Each placebo run has less data on each side of the fake fault than a real case, so these rates may be slightly low.
 
 ## Limitations
 
@@ -118,7 +151,7 @@ All 180 cases were re-run with minimum slowdowns of 1.1x, 1.5x and 2.0x and p-va
 - **Incomplete traces.** 15 Train Ticket cases have partial call graphs (`low_coverage: true`), and
   one (`re2tt_ts-train-service_socket_1`) has no call edges at all.
 - **Thresholds.** Labels depend on the minimum slowdown; see Sensitivity. Some real but small
-  (often amplified) slowdowns are only caught at 1.1x.
+  (often amplified) slowdowns are only caught at the baseline setting.
 - **Symptoms without a visible path.** Some cases show slowdowns elsewhere that the traces cannot
   connect to the root cause (for example `re2ob_currencyservice_cpu_1`). These are labeled `no path`,
   not guessed.
