@@ -1,6 +1,6 @@
 # RE2 Propagation Paths
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24211480.svg)](https://doi.org/10.5281/zenodo.24211480)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24211479.svg)](https://doi.org/10.5281/zenodo.24211479)
 
 Reference **failure propagation paths** for the 180 RE2 cases with traces in the
 [RCAEval](https://arxiv.org/abs/2412.17015) benchmark (Online Boutique and Train Ticket),
