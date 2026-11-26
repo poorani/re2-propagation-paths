@@ -5,6 +5,8 @@
 Reference **failure propagation paths** for the 180 RE2 cases with traces in the
 [RCAEval](https://arxiv.org/abs/2412.17015) benchmark (Online Boutique and Train Ticket),
 plus the code that builds them from distributed traces.
+**Paper:** P. Muthusamy. *Reference Failure Propagation Paths for the RCAEval RE2 Benchmark.*
+Preprint, Zenodo, 2026. [doi:10.5281/zenodo.24545313](https://doi.org/10.5281/zenodo.24545313)
 
 Root cause analysis (RCA) benchmarks usually label only the **root cause** of each fault.
 They do not say **how the failure spread** from the root cause to the services where users
@@ -177,8 +179,11 @@ python tests/test_reference_path.py code
 
 ## Citation
 
-If you use these labels or the code, please cite this repository (see `CITATION.cff`) and the
-RCAEval benchmark:
+If you use these labels or the code, please cite the paper, this repository (see `CITATION.cff`)
+and the RCAEval benchmark:
+
+> Poorani Muthusamy. Reference Failure Propagation Paths for the RCAEval RE2 Benchmark.
+> Preprint, Zenodo, 2026. doi:10.5281/zenodo.24545313
 
 > Luan Pham, Hongyu Zhang, Huong Ha, Flora Salim, Xiuzhen Zhang. RCAEval: A Benchmark for Root
 > Cause Analysis of Microservice Systems with Telemetry Data. arXiv:2412.17015, 2024.
