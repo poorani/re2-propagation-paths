@@ -5,6 +5,7 @@
 Reference **failure propagation paths** for the 180 RE2 cases with traces in the
 [RCAEval](https://arxiv.org/abs/2412.17015) benchmark (Online Boutique and Train Ticket),
 plus the code that builds them from distributed traces.
+
 **Paper:** P. Muthusamy. *Reference Failure Propagation Paths for the RCAEval RE2 Benchmark.*
 Preprint, Zenodo, 2026. [doi:10.5281/zenodo.24545313](https://doi.org/10.5281/zenodo.24545313)
 
